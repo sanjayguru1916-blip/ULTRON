@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e1116">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ultron">
+<title>Ultron</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: single-column phone app. Header on top, scrolling panel in the middle, tab bar at the bottom. */
+:root{
+  --bg:#0e1116; --panel:#161b23; --panel-2:#1c2330; --line:#262f3d;
+  --fg:#e8ecf2; --mute:#8b97a8; --eye:#ff4b2b; --eye-soft:rgba(255,75,43,.14); --ok:#3ecf8e;
+  --display:"Space Grotesk","Segoe UI",system-ui,sans-serif;
+  --body:"Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:var(--bg);color:var(--fg);font:15px/1.5 var(--body);
+  display:flex;flex-direction:column;overflow:hidden;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-left:max(0px,env(safe-area-inset-left,0px));
+  padding-right:max(0px,env(safe-area-inset-right,0px));
+}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--eye);outline-offset:2px}
+
+header{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.eye{width:30px;height:30px;flex:none}
+.brand{font:700 18px/1 var(--display);letter-spacing:.22em}
+.sub{font-size:12px;color:var(--mute);margin-top:3px;letter-spacing:0}
+.grow{flex:1;min-width:0}
+.icon-btn{background:none;border:1px solid var(--line);border-radius:10px;width:40px;height:40px;display:grid;place-items:center;color:var(--mute)}
+.icon-btn:hover{color:var(--fg);border-color:var(--mute)}
+
+main{flex:1;min-height:0;position:relative}
+section{position:absolute;inset:0;display:none;flex-direction:column;min-height:0}
+section.on{display:flex}
+.scroll{flex:1;min-height:0;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+
+/* chat */
+.msg{max-width:86%;padding:10px 13px;border-radius:14px;overflow-wrap:anywhere;white-space:pre-wrap}
+.msg.u{align-self:flex-end;background:var(--eye);color:#fff;border-bottom-right-radius:4px}
+.msg.a{align-self:flex-start;background:var(--panel-2);border:1px solid var(--line);border-bottom-left-radius:4px}
+.msg.err{border-color:var(--eye);color:#ffb3a3}
+.empty{margin:auto;text-align:center;color:var(--mute);max-width:280px}
+.empty b{display:block;font:700 20px var(--display);color:var(--fg);margin-bottom:6px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:13px;color:var(--fg)}
+.chip:hover{border-color:var(--eye)}
+.dots span{display:inline-block;width:6px;height:6px;margin-right:4px;border-radius:50%;background:var(--mute);animation:b 1s infinite}
+.dots span:nth-child(2){animation-delay:.15s}.dots span:nth-child(3){animation-delay:.3s}
+@keyframes b{0%,60%,100%{opacity:.3}30%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.dots span{animation:none}}
+
+.composer{display:flex;gap:8px;padding:10px 16px;border-top:1px solid var(--line);background:var(--bg)}
+.composer input,.composer textarea,.add input,.add textarea,.sheet input{
+  flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 13px;
+}
+.composer input::placeholder,.add input::placeholder,.add textarea::placeholder,.sheet input::placeholder{color:var(--mute)}
+.btn{background:var(--eye);border:0;color:#fff;border-radius:12px;padding:0 16px;font-weight:600;min-height:44px}
+.btn.ghost{background:var(--panel);border:1px solid var(--line);color:var(--fg)}
+.btn:disabled{opacity:.5}
+
+/* lists */
+.add{display:flex;flex-direction:column;gap:8px;padding:16px 16px 0}
+.add .row{display:flex;gap:8px}
+.add input[type=datetime-local]{color-scheme:dark}
+.item{display:flex;align-items:flex-start;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+.item .t{flex:1;min-width:0;overflow-wrap:anywhere;white-space:pre-wrap}
+.item .m{display:block;font-size:12px;color:var(--mute);margin-top:2px}
+.item.done .t{color:var(--mute);text-decoration:line-through}
+.item.due{border-color:var(--eye);background:var(--eye-soft)}
+.x{background:none;border:0;color:var(--mute);font-size:18px;line-height:1;padding:4px 6px;border-radius:8px}
+.x:hover{color:var(--eye)}
+.check{appearance:none;width:22px;height:22px;flex:none;border:2px solid var(--mute);border-radius:7px;margin:1px 0 0;display:grid;place-items:center;cursor:pointer;background:none}
+.check:checked{background:var(--ok);border-color:var(--ok)}
+.check:checked::after{content:"";width:5px;height:10px;border:solid #06281a;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.hd{font:700 12px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--mute);margin:6px 0 0}
+
+nav{display:flex;border-top:1px solid var(--line);background:var(--panel);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{flex:1;background:none;border:0;padding:10px 4px 9px;color:var(--mute);display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11.5px;font-weight:500;position:relative}
+nav button svg{width:22px;height:22px}
+nav button.on{color:var(--fg)}
+nav button.on::before{content:"";position:absolute;top:0;left:30%;right:30%;height:2px;background:var(--eye);border-radius:0 0 2px 2px}
+.badge{position:absolute;top:5px;left:calc(50% + 8px);background:var(--eye);color:#fff;border-radius:999px;font-size:10px;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 4px}
+
+/* settings sheet + toast */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:20}
+.scrim.on{display:flex}
+.sheet{background:var(--panel);border:1px solid var(--line);border-radius:18px 18px 0 0;width:100%;max-width:520px;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px;max-height:90%;overflow-y:auto}
+.sheet h2{font:700 18px var(--display);margin:0}
+.sheet label{font-size:12px;color:var(--mute);letter-spacing:.04em}
+.sheet p{margin:0;font-size:13px;color:var(--mute)}
+.sheet a{color:var(--eye)}
+.toast{position:fixed;left:16px;right:16px;top:calc(env(safe-area-inset-top,0px) + 10px);z-index:30;background:var(--panel-2);border:1px solid var(--eye);border-radius:12px;padding:12px 14px;display:none;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+.toast.on{display:block}
+</style>
+</head>
+<body>
+
+<header>
+  <svg class="eye" viewBox="0 0 32 32" aria-hidden="true">
+    <circle cx="16" cy="16" r="14" fill="#161b23" stroke="#262f3d" stroke-width="2"/>
+    <circle cx="16" cy="16" r="9" fill="#ff4b2b" opacity=".18"/>
+    <circle cx="16" cy="16" r="5" fill="#ff4b2b"/>
+    <circle cx="14.5" cy="14.5" r="1.6" fill="#ffd2c8"/>
+  </svg>
+  <div class="grow">
+    <div class="brand">ULTRON</div>
+    <div class="sub" id="today"></div>
+  </div>
+  <button class="icon-btn" id="openSet" aria-label="Settings">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+  </button>
+</header>
+
+<main>
+  <!-- CHAT -->
+  <section id="tab-chat" class="on">
+    <div class="scroll" id="chatLog"></div>
+    <form class="composer" id="chatForm">
+      <input id="chatIn" type="text" placeholder="Ultron kitta kelunga..." autocomplete="off" enterkeyhint="send" aria-label="Message">
+      <button class="btn" id="sendBtn" type="submit">Anuppu</button>
+    </form>
+  </section>
+
+  <!-- TASKS -->
+  <section id="tab-tasks">
+    <form class="add" id="taskForm">
+      <div class="row">
+        <input id="taskIn" type="text" placeholder="Pudhu velai add pannunga" autocomplete="off" aria-label="New task">
+        <button class="btn" type="submit">Add</button>
+      </div>
+    </form>
+    <div class="scroll" id="taskList"></div>
+  </section>
+
+  <!-- NOTES -->
+  <section id="tab-notes">
+    <form class="add" id="noteForm">
+      <textarea id="noteIn" rows="3" placeholder="Oru note ezhudhunga..." aria-label="New note"></textarea>
+      <div class="row"><button class="btn" type="submit" style="flex:1">Save note</button></div>
+    </form>
+    <div class="scroll" id="noteList"></div>
+  </section>
+
+  <!-- REMINDERS -->
+  <section id="tab-rem">
+    <form class="add" id="remForm">
+      <input id="remIn" type="text" placeholder="Enna ninaivu paduthanum?" autocomplete="off" aria-label="Reminder text">
+      <div class="row">
+        <input id="remAt" type="datetime-local" aria-label="Reminder time">
+        <button class="btn" type="submit">Add</button>
+      </div>
+    </form>
+    <div class="scroll" id="remList"></div>
+  </section>
+</main>
+
+<nav id="tabs">
+  <button data-tab="chat" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>Chat</button>
+  <button data-tab="tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>Velai<span class="badge" id="bTasks" hidden></span></button>
+  <button data-tab="notes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>Notes</button>
+  <button data-tab="rem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>Reminder<span class="badge" id="bRem" hidden></span></button>
+</nav>
+
+<div class="scrim" id="scrim">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="setTitle">
+    <h2 id="setTitle">Settings</h2>
+    <p>Chat work aaga free Gemini API key venum. <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> la Google account la login panni "Create API key" click pannunga. Key ungal phone la mattum save aagum.</p>
+    <label for="keyIn">Gemini API key</label>
+    <input id="keyIn" type="password" autocomplete="off" placeholder="AIza...">
+    <label for="modelIn">Model</label>
+    <input id="modelIn" type="text" autocomplete="off" placeholder="gemini-2.5-flash">
+    <p>Reminder notification ku permission kudunga. App open ah irundha mattum reminder work aagum.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn ghost" id="notifBtn" type="button">Notifications on</button>
+      <button class="btn ghost" id="clearChat" type="button">Chat clear</button>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn ghost" id="closeSet" type="button" style="flex:1">Close</button>
+      <button class="btn" id="saveSet" type="button" style="flex:1">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+  var $=function(s){return document.querySelector(s)};
+  var $$=function(s){return Array.prototype.slice.call(document.querySelectorAll(s))};
+  function load(k,d){try{var v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}}
+  function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+  function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+  function fmt(d){return new Date(d).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})}
+
+  var chat=load('ultron.chat',[]), tasks=load('ultron.tasks',[]), notes=load('ultron.notes',[]), rems=load('ultron.rems',[]);
+  var cfg=load('ultron.cfg',{key:'',model:'gemini-2.5-flash'});
+  var busy=false;
+
+  $('#today').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+
+  /* ---------- tabs ---------- */
+  function showTab(n){
+    $$('section').forEach(function(s){s.classList.toggle('on',s.id==='tab-'+n)});
+    $$('#tabs button').forEach(function(b){b.classList.toggle('on',b.dataset.tab===n)});
+    if(n==='chat'){var l=$('#chatLog');l.scrollTop=l.scrollHeight}
+  }
+  $('#tabs').addEventListener('click',function(e){var b=e.target.closest('button');if(b)showTab(b.dataset.tab)});
+
+  /* ---------- toast ---------- */
+  var tt;
+  function toast(msg){var t=$('#toast');t.textContent=msg;t.classList.add('on');clearTimeout(tt);tt=setTimeout(function(){t.classList.remove('on')},6000)}
+  $('#toast').addEventListener('click',function(){this.classList.remove('on')});
+
+  /* ---------- chat ---------- */
+  var starters=['Indha naal plan pannu','Enakku oru motivation sollu','Pending velai enna?','Oru quick recipe idea kudu'];
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function rich(s){return esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}
+  function renderChat(){
+    var l=$('#chatLog');l.innerHTML='';
+    if(!chat.length){
+      var e=document.createElement('div');e.className='empty';
+      e.innerHTML='<b>Vanakkam, naan Ultron</b>Ungal personal assistant. Enna venumnaalum kelunga.<div class="chips"></div>';
+      starters.forEach(function(s){var c=document.createElement('button');c.className='chip';c.type='button';c.textContent=s;c.onclick=function(){send(s)};e.querySelector('.chips').appendChild(c)});
+      l.appendChild(e);return;
+    }
+    chat.forEach(function(m){
+      var d=document.createElement('div');d.className='msg '+(m.r==='u'?'u':'a')+(m.err?' err':'');
+      d.innerHTML=m.r==='u'?esc(m.t):rich(m.t);l.appendChild(d);
+    });
+    if(busy){var t=document.createElement('div');t.className='msg a';t.innerHTML='<span class="dots"><span></span><span></span><span></span></span>';l.appendChild(t)}
+    l.scrollTop=l.scrollHeight;
+  }
+  function sysPrompt(){
+    var open=tasks.filter(function(t){return !t.done}).map(function(t){return '- '+t.t}).join('\n')||'(onnum illa)';
+    var r=rems.filter(function(x){return !x.fired}).map(function(x){return '- '+x.t+' @ '+fmt(x.at)}).join('\n')||'(onnum illa)';
+    var n=notes.slice(0,8).map(function(x){return '- '+x.t.slice(0,160)}).join('\n')||'(onnum illa)';
+    return 'Nee Ultron, user oda personal AI assistant. User kooda Tanglish la (Tamil words in English letters) friendly buddy madhiri pesu. User English la pesina English la reply pannu. Short ah, clear ah answer sollu. Theriyadha vishayam na theriyala nu honest ah sollu.\n'+
+      'Ippo neram: '+new Date().toLocaleString('en-IN',{dateStyle:'full',timeStyle:'short'})+'\n'+
+      'User oda pending velaigal:\n'+open+'\nUser oda reminders:\n'+r+'\nUser oda recent notes:\n'+n+'\n'+
+      'Indha app la user velai, notes, reminders add panna Velai / Notes / Reminder tab use pannalam nu sollu.';
+  }
+  function send(text){
+    text=(text||'').trim();if(!text||busy)return;
+    if(!cfg.key){chat.push({r:'u',t:text});chat.push({r:'a',t:'Munnadi Settings (mela right la gear icon) la Gemini API key podunga. Free ah kedaikum.',err:true});save('ultron.chat',chat);renderChat();return}
+    chat.push({r:'u',t:text});busy=true;save('ultron.chat',chat);renderChat();$('#sendBtn').disabled=true;
+    var contents=chat.filter(function(m){return !m.err}).slice(-20).map(function(m){return {role:m.r==='u'?'user':'model',parts:[{text:m.t}]}});
+    var url='https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(cfg.model||'gemini-2.5-flash')+':generateContent';
+    fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':cfg.key},
+      body:JSON.stringify({systemInstruction:{parts:[{text:sysPrompt()}]},contents:contents})})
+    .then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j}})})
+    .then(function(o){
+      if(!o.ok)throw new Error((o.j&&o.j.error&&o.j.error.message)||'Request fail aachu');
+      var p=o.j.candidates&&o.j.candidates[0]&&o.j.candidates[0].content&&o.j.candidates[0].content.parts;
+      var t=p?p.map(function(x){return x.text||''}).join(''):'';
+      chat.push({r:'a',t:t||'Badhil kidaikala. Marubadi try pannunga.',err:!t});
+    })
+    .catch(function(e){chat.push({r:'a',t:'Error: '+e.message+'. API key sariya irukka, internet irukka nu check pannunga.',err:true})})
+    .then(function(){busy=false;$('#sendBtn').disabled=false;chat=chat.slice(-60);save('ultron.chat',chat);renderChat()});
+  }
+  $('#chatForm').addEventListener('submit',function(e){e.preventDefault();var i=$('#chatIn');var v=i.value;i.value='';send(v)});
+
+  /* ---------- tasks ---------- */
+  function renderTasks(){
+    var l=$('#taskList');l.innerHTML='';
+    if(!tasks.length){l.innerHTML='<div class="empty"><b>Velai onnum illa</b>Mela type panni add pannunga.</div>';}
+    var open=tasks.filter(function(t){return !t.done}), done=tasks.filter(function(t){return t.done});
+    function row(t){
+      var d=document.createElement('div');d.className='item'+(t.done?' done':'');
+      var c=document.createElement('input');c.type='checkbox';c.className='check';c.checked=t.done;c.setAttribute('aria-label','Done');
+      c.onchange=function(){t.done=c.checked;save('ultron.tasks',tasks);renderTasks()};
+      var s=document.createElement('span');s.className='t';s.textContent=t.t;
+      var x=document.createElement('button');x.className='x';x.type='button';x.textContent='×';x.setAttribute('aria-label','Delete');
+      x.onclick=function(){tasks=tasks.filter(function(y){return y.id!==t.id});save('ultron.tasks',tasks);renderTasks()};
+      d.appendChild(c);d.appendChild(s);d.appendChild(x);return d;
+    }
+    open.forEach(function(t){l.appendChild(row(t))});
+    if(done.length){var h=document.createElement('div');h.className='hd';h.textContent='Mudinchadhu ('+done.length+')';l.appendChild(h);done.forEach(function(t){l.appendChild(row(t))})}
+    var b=$('#bTasks');b.hidden=!open.length;b.textContent=open.length;
+  }
+  $('#taskForm').addEventListener('submit',function(e){e.preventDefault();var i=$('#taskIn'),v=i.value.trim();if(!v)return;tasks.unshift({id:uid(),t:v,done:false});i.value='';save('ultron.tasks',tasks);renderTasks()});
+
+  /* ---------- notes ---------- */
+  function renderNotes(){
+    var l=$('#noteList');l.innerHTML='';
+    if(!notes.length){l.innerHTML='<div class="empty"><b>Notes onnum illa</b>Edhavathu ezhudhi save pannunga.</div>';return}
+    notes.forEach(function(n){
+      var d=document.createElement('div');d.className='item';
+      var s=document.createElement('span');s.className='t';s.textContent=n.t;
+      var m=document.createElement('span');m.className='m';m.textContent=fmt(n.at);s.appendChild(m);
+      var x=document.createElement('button');x.className='x';x.type='button';x.textContent='×';x.setAttribute('aria-label','Delete');
+      x.onclick=function(){notes=notes.filter(function(y){return y.id!==n.id});save('ultron.notes',notes);renderNotes()};
+      d.appendChild(s);d.appendChild(x);l.appendChild(d);
+    });
+  }
+  $('#noteForm').addEventListener('submit',function(e){e.preventDefault();var i=$('#noteIn'),v=i.value.trim();if(!v)return;notes.unshift({id:uid(),t:v,at:Date.now()});i.value='';save('ultron.notes',notes);renderNotes()});
+
+  /* ---------- reminders ---------- */
+  function renderRems(){
+    var l=$('#remList');l.innerHTML='';
+    var list=rems.slice().sort(function(a,b){return new Date(a.at)-new Date(b.at)});
+    if(!list.length){l.innerHTML='<div class="empty"><b>Reminder onnum illa</b>Time set panni add pannunga.</div>'}
+    list.forEach(function(r){
+      var d=document.createElement('div');d.className='item'+(r.fired?' done':'');
+      var s=document.createElement('span');s.className='t';s.textContent=r.t;
+      var m=document.createElement('span');m.className='m';m.textContent=(r.fired?'Mudinchadhu · ':'')+fmt(r.at);s.appendChild(m);
+      var x=document.createElement('button');x.className='x';x.type='button';x.textContent='×';x.setAttribute('aria-label','Delete');
+      x.onclick=function(){rems=rems.filter(function(y){return y.id!==r.id});save('ultron.rems',rems);renderRems()};
+      d.appendChild(s);d.appendChild(x);l.appendChild(d);
+    });
+    var p=rems.filter(function(r){return !r.fired}).length;var b=$('#bRem');b.hidden=!p;b.textContent=p;
+  }
+  function defaultRemTime(){var d=new Date(Date.now()+3600000);d.setMinutes(0,0,0);var z=d.getTimezoneOffset()*60000;return new Date(d-z).toISOString().slice(0,16)}
+  $('#remAt').value=defaultRemTime();
+  $('#remForm').addEventListener('submit',function(e){
+    e.preventDefault();var i=$('#remIn'),v=i.value.trim(),a=$('#remAt').value;if(!v||!a)return;
+    rems.push({id:uid(),t:v,at:new Date(a).toISOString(),fired:false});i.value='';$('#remAt').value=defaultRemTime();
+    save('ultron.rems',rems);renderRems();
+    if('Notification' in window&&Notification.permission==='default'){try{Notification.requestPermission()}catch(err){}}
+  });
+  function checkRems(){
+    var now=Date.now(),hit=false;
+    rems.forEach(function(r){
+      if(!r.fired&&new Date(r.at).getTime()<=now){
+        r.fired=true;hit=true;toast('⏰ '+r.t);
+        try{if(navigator.vibrate)navigator.vibrate([200,100,200])}catch(e){}
+        try{if('Notification' in window&&Notification.permission==='granted')new Notification('Ultron',{body:r.t})}catch(e){}
+      }
+    });
+    if(hit){save('ultron.rems',rems);renderRems()}
+  }
+  setInterval(checkRems,15000);
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)checkRems()});
+
+  /* ---------- settings ---------- */
+  function openSet(){$('#keyIn').value=cfg.key||'';$('#modelIn').value=cfg.model||'gemini-2.5-flash';$('#scrim').classList.add('on')}
+  function closeSet(){$('#scrim').classList.remove('on')}
+  $('#openSet').onclick=openSet;$('#closeSet').onclick=closeSet;
+  $('#scrim').addEventListener('click',function(e){if(e.target===this)closeSet()});
+  $('#saveSet').onclick=function(){cfg={key:$('#keyIn').value.trim(),model:$('#modelIn').value.trim()||'gemini-2.5-flash'};save('ultron.cfg',cfg);closeSet();toast('Save aachu')};
+  $('#clearChat').onclick=function(){chat=[];save('ultron.chat',chat);renderChat();closeSet()};
+  $('#notifBtn').onclick=function(){
+    if(!('Notification' in window)){toast('Indha browser la notification support illa');return}
+    Notification.requestPermission().then(function(p){toast(p==='granted'?'Notifications on aachu':'Permission kidaikala')});
+  };
+
+  /* ---------- install as app ---------- */
+  try{
+    var icon="data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="#0e1116"/><circle cx="16" cy="16" r="9" fill="#ff4b2b" opacity=".2"/><circle cx="16" cy="16" r="5" fill="#ff4b2b"/><circle cx="14.5" cy="14.5" r="1.6" fill="#ffd2c8"/></svg>');
+    var man={name:'Ultron',short_name:'Ultron',display:'standalone',background_color:'#0e1116',theme_color:'#0e1116',start_url:location.pathname,icons:[{src:icon,sizes:'any',type:'image/svg+xml',purpose:'any'}]};
+    var l=document.createElement('link');l.rel='manifest';l.href=URL.createObjectURL(new Blob([JSON.stringify(man)],{type:'application/manifest+json'}));document.head.appendChild(l);
+  }catch(e){}
+
+  renderChat();renderTasks();renderNotes();renderRems();checkRems();
+})();
+</script>
+</body>
+</html>
